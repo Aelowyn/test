@@ -1,0 +1,302 @@
+<title>Skillbound</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+  /* Layout: full-bleed canvas world; HUD floats in the corners; the Skill Book is a modal ledger. */
+  :root {
+    --night: #0c100e;
+    --panel: rgba(18, 24, 20, 0.86);
+    --panel-solid: #141a16;
+    --line: #2e3b32;
+    --parch: #ecdfc4;
+    --muted: #a59d89;
+    --ember: #e68b47;
+    --moss: #8db26f;
+    --steel: #9fb3c1;
+    --blood: #d65a4c;
+    --mana: #6fa2d8;
+    --gold: #e2b84f;
+    --poison: #a6d36a;
+    --display: 'Alegreya SC', 'Palatino Linotype', Georgia, serif;
+    --body: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--night); color: var(--parch); font-family: var(--body); font-size: 15px; overflow: hidden; -webkit-user-select: none; user-select: none; }
+  #app { position: relative; height: 100%; overflow: hidden; }
+  #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; cursor: crosshair; touch-action: none; }
+
+  #ui { position: absolute; inset: 0; pointer-events: none; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px; }
+  #ui button { pointer-events: auto; }
+  .hud-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .left-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+
+  .vitals { width: min(240px, 52vw); display: grid; gap: 5px; }
+  .bar { position: relative; height: 16px; background: rgba(0, 0, 0, 0.55); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; width: 100%; transition: width 0.12s linear; }
+  .bar.hp i { background: linear-gradient(var(--blood), #9e3a30); }
+  .bar.hp.low { animation: pulse 0.9s ease-in-out infinite; }
+  .bar.sta i { background: linear-gradient(#c7b66a, #8d7f3f); }
+  .bar.mp i { background: linear-gradient(var(--mana), #3f6c9e); }
+  .bar label, .bar span { position: absolute; top: 0; line-height: 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-shadow: 0 1px 2px #000; }
+  .bar label { left: 6px; }
+  .bar span { right: 6px; font-variant-numeric: tabular-nums; }
+  @keyframes pulse { 50% { border-color: var(--blood); } }
+
+  .status { display: flex; flex-wrap: wrap; gap: 4px; min-height: 0; }
+  .chip { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 10px; background: rgba(0, 0, 0, 0.6); border: 1px solid var(--line); }
+  .chip.poison { color: var(--poison); border-color: #4d6a2e; }
+  .chip.fire { color: var(--ember); border-color: #7a4524; }
+  .chip.bad { color: var(--blood); border-color: #7a3028; }
+  .chip.good { color: var(--gold); border-color: #7a6326; }
+  .chip.info { color: var(--steel); }
+
+  .weapons { display: flex; gap: 6px; flex-wrap: wrap; }
+  .slot { position: relative; display: grid; grid-template-columns: auto 1fr; column-gap: 6px; align-items: baseline; text-align: left; min-width: 0; padding: 6px 9px 7px; background: var(--panel); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; font: inherit; cursor: pointer; overflow: hidden; }
+  .slot:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .slot.active { color: var(--parch); border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(226, 184, 79, 0.25); }
+  .slot-key { font-size: 11px; font-weight: 700; color: var(--gold); }
+  .slot-name { font-family: var(--display); font-size: 14px; }
+  .slot-spec { grid-column: 1 / -1; font-size: 11px; color: var(--ember); }
+  .slot-spec.locked { color: var(--muted); opacity: 0.8; }
+  .slot-cd { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--ember); }
+
+  .mapbox { display: grid; gap: 4px; justify-items: end; }
+  #minimap { width: 168px; height: 112px; border: 1px solid var(--line); border-radius: 3px; background: rgba(0, 0, 0, 0.5); }
+  #region-name { font-family: var(--display); font-size: 15px; letter-spacing: 0.03em; text-shadow: 0 1px 3px #000; }
+  #region-name.flash { animation: regionIn 1.8s ease-out; }
+  @keyframes regionIn { 0% { color: var(--gold); transform: translateY(-3px); } 100% { color: var(--parch); transform: none; } }
+
+  #toasts { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: min(360px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .toast { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--steel); border-radius: 3px; padding: 6px 12px; font-size: 14px; text-align: center; animation: toastIn 0.25s ease-out; transition: opacity 0.4s, transform 0.4s; max-width: 100%; }
+  .toast span { display: block; font-size: 12px; color: var(--muted); }
+  .toast b { font-weight: 700; }
+  .toast.level { border-left-color: var(--moss); }
+  .toast.stat { border-left-color: var(--gold); }
+  .toast.stat b { color: var(--gold); }
+  .toast.ability { border-left-color: var(--ember); }
+  .toast.ability b { color: var(--ember); }
+  .toast.stir { border-left-color: #b48ad8; font-style: italic; }
+  .toast.out { opacity: 0; transform: translateY(-6px); }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(-6px); } }
+
+  #banner { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); width: min(460px, calc(100% - 32px)); text-align: center; padding: 18px 22px 20px; background: linear-gradient(rgba(20, 16, 10, 0.92), rgba(14, 12, 8, 0.92)); border: 1px solid #5c4a24; border-radius: 4px; box-shadow: 0 0 40px rgba(226, 184, 79, 0.15); }
+  #banner.show { animation: bannerIn 4.6s ease both; }
+  @keyframes bannerIn { 0% { opacity: 0; transform: translateX(-50%) scale(0.94); } 8% { opacity: 1; transform: translateX(-50%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
+  #banner-kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+  #banner-title { font-family: var(--display); font-size: clamp(28px, 6vw, 40px); line-height: 1.1; margin: 6px 0 8px; text-wrap: balance; }
+  #banner-desc { color: var(--muted); font-size: 15px; }
+
+  #prompt { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 5px 12px; font-size: 14px; white-space: nowrap; }
+  kbd { font-family: var(--body); font-weight: 700; font-size: 11px; color: var(--night); background: var(--parch); border-radius: 3px; padding: 1px 5px; margin-right: 2px; }
+
+  #dialog { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); width: min(600px, calc(100% - 32px)); background: var(--panel-solid); border: 1px solid #4c3d22; border-radius: 4px; padding: 14px 18px; pointer-events: auto; cursor: pointer; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+  #dialog-name { font-family: var(--display); color: var(--gold); font-size: 17px; }
+  #dialog-text { margin: 6px 0 0; font-size: 16px; line-height: 1.5; max-width: 65ch; }
+  #dialog-note { margin: 8px 0 0; font-size: 12px; color: var(--ember); letter-spacing: 0.03em; }
+  #dialog-close { font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+  #book-btn { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: 16px; font: inherit; font-family: var(--display); font-size: 15px; color: var(--parch); background: var(--panel); border: 1px solid #5c4a24; border-radius: 4px; padding: 8px 14px; cursor: pointer; }
+  #book-btn:hover { border-color: var(--gold); }
+  #book-btn:focus-visible { outline: 2px solid var(--gold); }
+  #help { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: 16px; max-width: calc(100% - 200px); font-size: 12px; color: var(--muted); line-height: 1.7; text-shadow: 0 1px 2px #000; }
+  #help b { color: var(--parch); font-weight: 700; }
+
+  /* ---------- Skill Book ---------- */
+  #book { position: absolute; inset: 0; z-index: 5; background: rgba(5, 7, 6, 0.72); display: flex; justify-content: center; align-items: flex-start; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px; overflow-y: auto; -webkit-user-select: text; user-select: text; }
+  .book-panel { width: 100%; max-width: 1080px; background: #161d18; border: 1px solid #4c3d22; border-radius: 6px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6); }
+  .book-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 22px 14px; border-bottom: 1px solid var(--line); }
+  .book-head h2 { margin: 0; font-family: var(--display); font-size: 30px; font-weight: 700; letter-spacing: 0.02em; }
+  #book-summary { margin: 2px 0 0; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .book-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .book-tools label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+  .btn { font: inherit; font-size: 13px; color: var(--parch); background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; cursor: pointer; }
+  .btn:hover { border-color: var(--muted); }
+  .btn:focus-visible, .book-tools input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+  #reset-btn { color: var(--blood); }
+  #book-close { border-color: #5c4a24; }
+  .book-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0; }
+  .book-col { padding: 18px 22px 24px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .book-col + .book-col { border-left: 1px solid var(--line); }
+  .book-col h3 { margin: 0; font-family: var(--display); font-size: 19px; color: var(--gold); letter-spacing: 0.04em; }
+  .book-col h3 small { font-family: var(--body); font-size: 12px; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+
+  #book-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .stat-card { border: 1px solid var(--line); border-radius: 4px; padding: 8px 9px; background: rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .stat-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .stat-id { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: var(--muted); }
+  .stat-val { font-family: var(--display); font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat-name { font-size: 13px; font-weight: 700; }
+  .stat-src { font-size: 11px; color: var(--gold); line-height: 1.35; }
+  .stat-desc { font-size: 11px; color: var(--muted); line-height: 1.35; }
+
+  #book-skills { display: flex; flex-direction: column; gap: 10px; }
+  .skill { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+  .skill-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .skill-name { font-family: var(--display); font-size: 17px; }
+  .skill-lvl { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--moss); }
+  .xpbar { height: 6px; background: rgba(0, 0, 0, 0.5); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .xpbar i { display: block; height: 100%; background: var(--moss); }
+  .skill-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 12px; color: var(--parch); font-variant-numeric: tabular-nums; }
+  .skill-desc { font-size: 12px; color: var(--muted); }
+  .dim { color: var(--muted); }
+  .milestones { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .milestones li { display: grid; grid-template-columns: 44px auto 1fr; gap: 8px; font-size: 12px; color: var(--muted); align-items: baseline; }
+  .milestones li.got { color: var(--parch); }
+  .ms-lvl { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .milestones li.got .ms-lvl { color: var(--ember); }
+  .ms-name { font-weight: 700; white-space: nowrap; }
+  .milestones li:not(.got) .ms-name::before { content: '\25CB  '; }
+  .milestones li.got .ms-name::before { content: '\25CF  '; color: var(--ember); }
+
+  #book-secrets { display: flex; flex-direction: column; gap: 8px; }
+  .secret { border: 1px dashed var(--line); border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .secret header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .secret h4 { margin: 0; font-family: var(--display); font-size: 17px; font-weight: 700; }
+  .secret p { margin: 0; font-size: 13px; line-height: 1.45; }
+  .secret .src { font-size: 11px; color: var(--muted); }
+  .secret blockquote { margin: 0; font-size: 14px; line-height: 1.45; font-style: italic; color: var(--parch); border-left: 2px solid #6a5630; padding-left: 10px; }
+  .secret .tag { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .secret.unknown { opacity: 0.6; }
+  .secret.stirring { border-color: #5d4a78; }
+  .secret.stirring .tag { color: #b48ad8; }
+  .secret.rumored { border-color: #5c4a24; }
+  .secret.rumored .tag { color: var(--gold); }
+  .secret .secret-bar i { background: #b48ad8; }
+  .secret.rumored .secret-bar i { background: var(--gold); }
+  .secret.unlocked { border-style: solid; border-color: #6a5630; background: rgba(226, 184, 79, 0.06); }
+  .secret.unlocked h4 { color: var(--gold); }
+  .secret .tag.weird { color: #b48ad8; }
+  .secret .tag.grounded { color: var(--steel); }
+  .secret .tag.combined { color: var(--ember); }
+  .secret .tag.evolution { color: var(--moss); }
+  .secret.evo { margin-left: 18px; border-color: #3d5a34; }
+  .reqs { list-style: none; margin: 0; padding: 0; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 12px; }
+  .reqs li::before { content: '\2713  '; color: var(--moss); }
+  .controls { font-size: 12px; color: var(--muted); line-height: 1.8; border-top: 1px solid var(--line); padding-top: 12px; }
+  .controls b { color: var(--parch); }
+
+  /* ---------- Touch controls ---------- */
+  #touch { display: none; }
+  body.touch #touch { display: block; }
+  body.touch #help { display: none; }
+  #stick-zone { position: absolute; left: 0; bottom: 0; width: 45%; height: 45%; touch-action: none; }
+  #stick-base { position: absolute; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 50%; border: 2px solid rgba(236, 223, 196, 0.25); background: rgba(0, 0, 0, 0.25); left: 90px; top: calc(100% - 100px); opacity: 0.5; }
+  #stick-base.on { opacity: 1; }
+  #stick-knob { position: absolute; left: 32px; top: 32px; width: 40px; height: 40px; border-radius: 50%; background: rgba(236, 223, 196, 0.5); }
+  .tbtns { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: 64px; display: grid; grid-template-columns: repeat(3, 58px); gap: 8px; }
+  .tbtns button { width: 58px; height: 58px; border-radius: 50%; border: 1px solid rgba(236, 223, 196, 0.3); background: rgba(14, 18, 15, 0.65); color: var(--parch); font: 700 12px var(--body); touch-action: none; }
+  .tbtns button.down { background: rgba(226, 184, 79, 0.35); }
+  .tbtns .big { grid-column: 3; grid-row: 2 / span 2; height: 124px; border-radius: 29px; }
+  body.touch #book-btn { bottom: 16px; }
+  body.touch #prompt { bottom: 210px; }
+
+  @media (max-width: 860px) {
+    .book-body { grid-template-columns: minmax(0, 1fr); }
+    .book-col + .book-col { border-left: 0; border-top: 1px solid var(--line); }
+    #book-stats { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    #minimap { width: 120px; height: 80px; }
+    #help { display: none; }
+    .slot { padding: 5px 7px; }
+    .slot-spec { display: none; }
+    #region-name { font-size: 13px; }
+    #toasts { top: 150px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    #banner.show { animation: none; opacity: 1; }
+  }
+</style>
+
+<div id="app">
+  <canvas id="game" tabindex="0" aria-label="Game world. Use WASD to move."></canvas>
+
+  <div id="ui">
+    <div class="hud-top">
+      <div class="left-col">
+        <section class="vitals" aria-label="Health, stamina and mana">
+          <div class="bar hp"><i id="hp-fill"></i><label>HP</label><span id="hp-text"></span></div>
+          <div class="bar sta"><i id="sta-fill"></i><label>STA</label><span id="sta-text"></span></div>
+          <div class="bar mp"><i id="mp-fill"></i><label>MP</label><span id="mp-text"></span></div>
+        </section>
+        <div id="weapons" class="weapons" aria-label="Weapons"></div>
+        <div id="status" class="status" aria-live="polite"></div>
+      </div>
+      <section class="mapbox" aria-label="Map">
+        <canvas id="minimap" width="168" height="112"></canvas>
+        <div id="region-name"></div>
+      </section>
+    </div>
+
+    <div id="toasts" aria-live="polite"></div>
+    <div id="banner" hidden><div id="banner-kicker"></div><div id="banner-title"></div><div id="banner-desc"></div></div>
+    <div id="prompt" hidden></div>
+    <div id="dialog" hidden role="dialog" aria-live="polite">
+      <div id="dialog-name"></div>
+      <p id="dialog-text"></p>
+      <p id="dialog-note" hidden></p>
+      <div id="dialog-close">Press E or click to close</div>
+    </div>
+
+    <div id="help">
+      <b>WASD</b> move · <b>Mouse</b> aim · <b>Click</b> attack · <b>Right-click</b> block · <b>Space</b> roll · <b>Shift</b> sprint<br>
+      <b>F</b> special · <b>1 2 3</b> weapons · <b>E</b> interact or eat · <b>Tab</b> Skill Book
+    </div>
+    <button id="book-btn" type="button">Skill Book <kbd>Tab</kbd></button>
+  </div>
+
+  <div id="touch" aria-hidden="true">
+    <div id="stick-zone"><div id="stick-base"><div id="stick-knob"></div></div></div>
+    <div class="tbtns">
+      <button data-act="interact">Use</button>
+      <button data-act="special">Special</button>
+      <button data-act="swap">Swap</button>
+      <button data-act="dodge">Roll</button>
+      <button data-act="block">Block</button>
+      <button data-act="attack" class="big">Attack</button>
+      <button data-act="book">Book</button>
+    </div>
+  </div>
+
+  <div id="book" hidden>
+    <div class="book-panel" role="dialog" aria-labelledby="book-title">
+      <div class="book-head">
+        <div>
+          <h2 id="book-title">Skill Book</h2>
+          <p id="book-summary"></p>
+        </div>
+        <div class="book-tools">
+          <label for="fast-mode"><input type="checkbox" id="fast-mode"> Fast test mode (×4 XP)</label>
+          <button type="button" class="btn" id="reset-btn">Reset progress</button>
+          <button type="button" class="btn" id="book-close">Close <kbd>Tab</kbd></button>
+        </div>
+      </div>
+      <div class="book-body">
+        <div class="book-col">
+          <h3>Stats <small>Stats only grow from sub-skills. There are no points to spend.</small></h3>
+          <div id="book-stats"></div>
+          <h3>Sub-skills <small>Each one grows by doing it.</small></h3>
+          <div id="book-skills"></div>
+        </div>
+        <div class="book-col">
+          <h3>Secrets <small>Hidden skills. Ask around in Hollowford.</small></h3>
+          <div id="book-secrets"></div>
+          <div class="controls">
+            <b>WASD</b> move · <b>Mouse</b> aim · <b>Click / J</b> attack · <b>Right-click / K</b> block (block just before a hit to parry) · <b>Space</b> roll (roll through an attack for a perfect dodge) · <b>Shift</b> sprint · <b>F</b> weapon special · <b>1 2 3 / Q / wheel</b> switch weapon · <b>E</b> talk, read, eat · <b>Tab / I</b> Skill Book. The well in town heals you. Enemies cannot enter town.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/progression.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
