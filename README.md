@@ -7,7 +7,7 @@ A small top-down fantasy prototype for testing one idea: **you get stronger by d
 - **Milestone abilities** unlock at visible sub-skill levels (Rapier 5 → Lunge).
 - **Hidden skills** unlock from secret requirements, some grounded (perfect parries → Riposte), some weird (eat slime goo → Slime Gut). The Fencing Master and the Hermit's notes in town give rumors about them.
 - **Evolutions** upgrade hidden skills you already have.
-- **Soft cap:** XP per level grows as `8 × level^1.5`, so there is no hard max.
+- **Soft cap:** XP per level grows as `12 × level^1.7`, so there is no hard max.
 
 ## Run it
 

@@ -3,7 +3,7 @@ window.GAME_CONFIG = {
   // XP needed to go from level L to L+1 = base * L^exponent.
   // This is the soft cap: every level costs more than the last,
   // so early levels fly by and high levels take real dedication.
-  xpCurve: { base: 8, exponent: 1.5 },
+  xpCurve: { base: 12, exponent: 1.7 },
 
   // Global XP multiplier, and the extra multiplier for "fast test mode"
   // (toggle it in the Skill Book).
