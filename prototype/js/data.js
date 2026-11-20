@@ -4,28 +4,31 @@
 //
 // Condition types used by hidden skills and evolutions:
 //   { skill: 'rapier', min: 8 }        sub-skill level
-//   { stat: 'VIT', min: 9 }            base stat value
+//   { stat: 'CON', min: 9 }            base stat value
 //   { counter: 'gooEaten', min: 12 }   anything the game counts (see counterNames)
 //   { unlocked: 'riposte' }            another hidden skill is already unlocked
 window.GAME_DATA = {
+  // Base stats: broad power that helps everything in their area.
   stats: [
-    { id: 'STR', name: 'Strength', desc: 'Greatsword damage and knockback.' },
-    { id: 'DEX', name: 'Dexterity', desc: 'Rapier damage and critical chance.' },
-    { id: 'VIT', name: 'Vitality', desc: 'Max health and damage reduction.' },
-    { id: 'AGI', name: 'Agility', desc: 'Move speed, dodge recovery, stamina.' },
-    { id: 'INT', name: 'Intellect', desc: 'Fire damage, mana and mana regen.' },
+    { id: 'STR', name: 'Strength', desc: 'Greatsword damage, knockback, a little stamina.' },
+    { id: 'DEX', name: 'Dexterity', desc: 'Rapier damage, critical chance, move speed, roll recovery.' },
+    { id: 'CON', name: 'Constitution', desc: 'Max health, max stamina and stamina regen.' },
+    { id: 'INT', name: 'Intelligence', desc: 'Fire damage and max mana.' },
+    { id: 'WIS', name: 'Wisdom', desc: 'Mana regen. Poison and other effects on you wear off faster.' },
   ],
 
-  // Sub-skills level up by doing the thing. Each one feeds base stats:
-  // { stat: 'DEX', every: 5 } means +1 DEX at levels 5, 10, 15...
+  // Skills level up by doing the thing. Each one gives two things:
+  //  - its own edge: a direct bonus per level to what the skill does (see `edge`)
+  //  - base stats: { stat: 'DEX', every: 5 } means +1 DEX at levels 5, 10, 15...
   subskills: [
-    { id: 'rapier', name: 'Rapier', desc: 'Grows when rapier strikes land.', stats: [{ stat: 'DEX', every: 5 }, { stat: 'AGI', every: 10 }] },
-    { id: 'greatsword', name: 'Greatsword', desc: 'Grows when greatsword swings land.', stats: [{ stat: 'STR', every: 5 }, { stat: 'VIT', every: 10 }] },
-    { id: 'fire', name: 'Fire Magic', desc: 'Grows when your fire hurts something.', stats: [{ stat: 'INT', every: 5 }, { stat: 'DEX', every: 15 }] },
-    { id: 'block', name: 'Guarding', desc: 'Grows when you absorb hits with your guard. Parries count most.', stats: [{ stat: 'VIT', every: 5 }, { stat: 'STR', every: 12 }] },
-    { id: 'evasion', name: 'Evasion', desc: 'Grows when you roll. Rolling through an attack counts most.', stats: [{ stat: 'AGI', every: 5 }] },
-    { id: 'endurance', name: 'Endurance', desc: 'Grows when you take damage and keep going.', stats: [{ stat: 'VIT', every: 4 }] },
-    { id: 'running', name: 'Running', desc: 'Grows as you sprint.', stats: [{ stat: 'AGI', every: 8 }, { stat: 'VIT', every: 16 }] },
+    { id: 'rapier', name: 'Rapier', desc: 'Grows when rapier strikes land.', edge: '+2% rapier damage and +0.3% crit chance per level', stats: [{ stat: 'DEX', every: 5 }] },
+    { id: 'greatsword', name: 'Greatsword', desc: 'Grows when greatsword swings land.', edge: '+2% greatsword damage per level', stats: [{ stat: 'STR', every: 5 }, { stat: 'CON', every: 12 }] },
+    { id: 'fire', name: 'Fire Magic', desc: 'Grows when your fire hurts something.', edge: '+2% fire damage per level', stats: [{ stat: 'INT', every: 5 }, { stat: 'WIS', every: 10 }] },
+    { id: 'block', name: 'Guarding', desc: 'Grows when you absorb hits with your guard. Parries count most.', edge: 'Blocking costs 2% less stamina per level', stats: [{ stat: 'CON', every: 6 }, { stat: 'STR', every: 12 }] },
+    { id: 'evasion', name: 'Evasion', desc: 'Grows when you roll. Rolling through an attack counts most.', edge: 'Roll recovers 1.5% faster and goes 1% farther per level', stats: [{ stat: 'DEX', every: 6 }] },
+    { id: 'toughness', name: 'Toughness', desc: 'Grows when you take damage and keep going.', edge: '+4 max health per level and more damage reduction', stats: [{ stat: 'CON', every: 4 }] },
+    { id: 'running', name: 'Running', desc: 'Grows as you sprint.', edge: 'Sprint 1% faster and 1.5% cheaper per level', stats: [{ stat: 'CON', every: 8 }, { stat: 'DEX', every: 12 }] },
+    { id: 'meditation', name: 'Meditation', desc: 'Grows when you stand still and recover, away from danger.', edge: 'Recover health and mana faster while meditating, per level', stats: [{ stat: 'WIS', every: 4 }] },
   ],
 
   // Visible milestones: reach the level, get the ability.
@@ -43,8 +46,9 @@ window.GAME_DATA = {
     { id: 'bulwark', name: 'Bulwark', skill: 'block', level: 15, desc: 'Your guard covers twice as wide an angle.' },
     { id: 'quickFeet', name: 'Quick Feet', skill: 'evasion', level: 5, desc: 'Your roll recovers 30% faster.' },
     { id: 'longRoll', name: 'Long Roll', skill: 'evasion', level: 15, desc: 'Rolls cover 40% more ground.' },
-    { id: 'grit', name: 'Grit', skill: 'endurance', level: 10, desc: 'Regenerate health after 4 seconds without being hurt.' },
+    { id: 'grit', name: 'Grit', skill: 'toughness', level: 10, desc: 'Regenerate health after 4 seconds without being hurt.' },
     { id: 'lightStep', name: 'Light Step', skill: 'running', level: 10, desc: 'Sprinting costs 40% less stamina.' },
+    { id: 'innerCalm', name: 'Inner Calm', skill: 'meditation', level: 10, desc: 'You can meditate even right after being hit.' },
   ],
 
   // Hidden skills: no level shown, no requirements shown until you earn them.
@@ -60,13 +64,13 @@ window.GAME_DATA = {
     {
       id: 'ironHide', name: 'Iron Hide', kind: 'grounded',
       desc: 'Every hit you take is reduced by 3 before anything else.',
-      conds: [{ stat: 'VIT', min: 9 }, { counter: 'damageTaken', min: 900 }],
+      conds: [{ skill: 'toughness', min: 10 }, { counter: 'damageTaken', min: 900 }],
       hint: { source: 'master', text: '"Some fighters grow hard the way old leather does. By being struck. A great deal."' },
     },
     {
       id: 'windStep', name: 'Wind Step', kind: 'grounded',
       desc: 'Perfect dodges give back 20 stamina and make your next hit a critical.',
-      conds: [{ stat: 'AGI', min: 8 }, { counter: 'perfectDodges', min: 40 }],
+      conds: [{ stat: 'DEX', min: 8 }, { counter: 'perfectDodges', min: 40 }],
       hint: { source: 'master', text: '"Let the blow pass through the space you just left. Do it often enough and the wind starts to remember you."' },
     },
     {
@@ -124,7 +128,7 @@ window.GAME_DATA = {
     {
       id: 'gelatinousBody', name: 'Gelatinous Body', from: 'slimeGut', kind: 'evolution',
       desc: '15% chance to absorb a hit completely. You jiggle. It is undignified.',
-      conds: [{ unlocked: 'slimeGut' }, { counter: 'gooEaten', min: 40 }, { skill: 'endurance', min: 10 }],
+      conds: [{ unlocked: 'slimeGut' }, { counter: 'gooEaten', min: 40 }, { skill: 'toughness', min: 10 }],
       hint: { source: 'hermit', text: 'Keep eating the goo and keep taking hits. At some point the line between you and slime gets blurry.' },
     },
   ],

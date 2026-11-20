@@ -141,6 +141,7 @@
   .xpbar { height: 6px; background: rgba(0, 0, 0, 0.5); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
   .xpbar i { display: block; height: 100%; background: var(--moss); }
   .skill-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 12px; color: var(--parch); font-variant-numeric: tabular-nums; }
+  .skill-edge { font-size: 12px; color: var(--ember); }
   .skill-desc { font-size: 12px; color: var(--muted); }
   .dim { color: var(--muted); }
   .milestones { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
@@ -278,16 +279,16 @@
       </div>
       <div class="book-body">
         <div class="book-col">
-          <h3>Stats <small>Stats only grow from sub-skills. There are no points to spend.</small></h3>
+          <h3>Base stats <small>Broad power. They only grow from skills; there are no points to spend.</small></h3>
           <div id="book-stats"></div>
-          <h3>Sub-skills <small>Each one grows by doing it.</small></h3>
+          <h3>Skills <small>Grow by doing. Each level gives an edge in that skill.</small></h3>
           <div id="book-skills"></div>
         </div>
         <div class="book-col">
           <h3>Secrets <small>Hidden skills. Ask around in Hollowford.</small></h3>
           <div id="book-secrets"></div>
           <div class="controls">
-            <b>WASD</b> move · <b>Mouse</b> aim · <b>Click / J</b> attack · <b>Right-click / K</b> block (block just before a hit to parry) · <b>Space</b> roll (roll through an attack for a perfect dodge) · <b>Shift</b> sprint · <b>F</b> weapon special · <b>1 2 3 / Q / wheel</b> switch weapon · <b>E</b> talk, read, eat · <b>Tab / I</b> Skill Book. The well in town heals you. Enemies cannot enter town.
+            <b>WASD</b> move · <b>Mouse</b> aim · <b>Click / J</b> attack · <b>Right-click / K</b> block (block just before a hit to parry) · <b>Space</b> roll (roll through an attack for a perfect dodge) · <b>Shift</b> sprint · <b>F</b> weapon special · <b>1 2 3 / Q / wheel</b> switch weapon · <b>E</b> talk, read, eat · <b>Tab / I</b> Skill Book. The well in town heals you. Stand still away from enemies to meditate. Enemies cannot enter town.
           </div>
         </div>
       </div>

@@ -31,6 +31,8 @@
     load(saved) {
       const s = this.fresh();
       if (saved && saved.version === 1) {
+        // Endurance was renamed to Toughness; carry old progress over.
+        if (saved.skills && saved.skills.endurance && !saved.skills.toughness) saved.skills.toughness = saved.skills.endurance;
         for (const id in s.skills) {
           const v = saved.skills && saved.skills[id];
           if (v) s.skills[id] = { level: Math.max(1, +v.level || 1), xp: Math.max(0, +v.xp || 0) };

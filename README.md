@@ -2,8 +2,9 @@
 
 A small top-down fantasy prototype for testing one idea: **you get stronger by doing things, not by leveling up.**
 
-- **Sub-skills** (Rapier, Greatsword, Fire Magic, Guarding, Evasion, Endurance, Running) level up when you use them.
-- **Stats** (STR, DEX, VIT, AGI, INT) only come from sub-skills. Example: every 5 Rapier levels gives +1 DEX. There are no points to spend, so switching playstyle moves your build along with you.
+- **Skills** (Rapier, Greatsword, Fire Magic, Guarding, Evasion, Toughness, Running, Meditation) level up when you use them. Each level gives an edge in that skill, such as +2% rapier damage or +4 max health from Toughness.
+- **Base stats** (STR, DEX, CON, INT, WIS) give broad power and only come from skills. Example: every 5 Rapier levels gives +1 DEX. There are no points to spend, so switching playstyle moves your build along with you.
+- **Health** comes from Constitution (a stat) and Toughness (a skill): `40 + CON × 6 + 4 per Toughness level`, so 70 at the start.
 - **Milestone abilities** unlock at visible sub-skill levels (Rapier 5 → Lunge).
 - **Hidden skills** unlock from secret requirements, some grounded (perfect parries → Riposte), some weird (eat slime goo → Slime Gut). The Fencing Master and the Hermit's notes in town give rumors about them.
 - **Evolutions** upgrade hidden skills you already have.

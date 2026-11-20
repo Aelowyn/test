@@ -143,6 +143,7 @@
     if (p.poisonT > 0) st.push(['poison', `Poisoned ${p.poisonT.toFixed(0)}s`]);
     if (p.inFire) st.push(['fire', P.has('ashWalker') ? 'Basking in fire' : 'Burning']);
     if (p.hp < S.maxHp * 0.25 && !p.dead) st.push(['bad', P.has('secondWind') ? 'Second Wind' : 'Low health']);
+    if (p.meditating) st.push(['info', 'Meditating']);
     if (p.riposteReady) st.push(['good', 'Riposte ready']);
     if (p.windStepCrit) st.push(['good', 'Next hit crits']);
     if (P.state.fastMode) st.push(['info', 'Fast test mode']);
@@ -189,6 +190,7 @@
         <div class="skill-head"><span class="skill-name">${sk.name}</span><span class="skill-lvl">Lv ${st.level}</span></div>
         <div class="xpbar"><i style="width:${pct(st.xp / need)}%"></i></div>
         <div class="skill-meta"><span>${fmt(st.xp)} / ${need} XP</span><span>${feeds}</span></div>
+        <div class="skill-edge">${sk.edge}</div>
         <div class="skill-desc">${sk.desc}</div>
         ${ms ? `<ul class="milestones">${ms}</ul>` : ''}
       </div>`;

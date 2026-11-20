@@ -133,22 +133,33 @@
     poisonT: 0, slimeRegen: 0, sinceHit: 99, hitFlash: 0, stun: 0, dead: false, deadT: 0, runAcc: 0, lastRegion: null, lowResT: 0,
   };
 
+  // Base stats give broad power; skill levels (L) give the edge in their own area.
   function derived() {
-    const s = P.stats, has = id => P.has(id);
+    const s = P.stats, has = id => P.has(id), L = id => P.level(id) - 1;
+    const tough = L('toughness');
     return {
-      maxHp: 60 + s.VIT * 8,
-      dr: s.VIT / (s.VIT + 60),
-      speed: 135 + s.AGI * 4,
-      maxSta: 70 + s.AGI * 3 + s.VIT,
-      staRegen: 16 + s.AGI * 1.6,
-      maxMana: 20 + s.INT * 5,
-      manaRegen: 1.5 + s.INT * 0.3,
-      dodgeCd: Math.max(0.3, 0.9 - s.AGI * 0.012) * (has('quickFeet') ? 0.7 : 1),
-      dodgeDist: 120 * (has('longRoll') ? 1.4 : 1),
-      crit: 0.03 + s.DEX * 0.008 + (has('pinpoint') ? 0.15 : 0),
+      maxHp: 40 + s.CON * 6 + tough * 4,
+      dr: tough / (tough + 50),
+      speed: 140 + s.DEX * 3,
+      maxSta: 60 + s.CON * 3 + s.STR,
+      staRegen: 14 + s.CON * 1.2 + s.DEX * 0.4,
+      maxMana: 15 + s.INT * 5,
+      manaRegen: 1 + s.WIS * 0.35,
+      statusResist: 1 / (1 + Math.max(0, s.WIS - 5) * 0.05),
+      dodgeCd: Math.max(0.3, (0.9 - s.DEX * 0.008) * Math.max(0.5, 1 - L('evasion') * 0.015)) * (has('quickFeet') ? 0.7 : 1),
+      dodgeDist: 120 * (1 + L('evasion') * 0.01) * (has('longRoll') ? 1.4 : 1),
+      crit: 0.03 + s.DEX * 0.006 + L('rapier') * 0.003 + (has('pinpoint') ? 0.15 : 0),
       critMul: has('pinpoint') ? 2.5 : 1.8,
       blockArc: has('bulwark') ? 4.2 : 2.1,
-      mul: { rapier: 1 + (s.DEX - 5) * 0.09 + (s.STR - 5) * 0.02, greatsword: 1 + (s.STR - 5) * 0.1, fire: 1 + (s.INT - 5) * 0.1 },
+      blockCost: Math.max(0.4, 1 - L('block') * 0.02) * (has('steadyGuard') ? 0.6 : 1),
+      sprintMul: 1.5 + L('running') * 0.01,
+      sprintCost: 14 * Math.max(0.4, 1 - L('running') * 0.015) * (has('lightStep') ? 0.6 : 1),
+      meditateRate: 1 + L('meditation') * 0.15,
+      mul: {
+        rapier: (1 + (s.DEX - 5) * 0.07) * (1 + L('rapier') * 0.02),
+        greatsword: (1 + (s.STR - 5) * 0.08) * (1 + L('greatsword') * 0.02),
+        fire: (1 + (s.INT - 5) * 0.08) * (1 + L('fire') * 0.02),
+      },
     };
   }
 
@@ -571,7 +582,7 @@
           }
           return 'parry';
         }
-        const cost = amount * 0.9 * (P.has('steadyGuard') ? 0.6 : 1);
+        const cost = amount * 0.9 * S.blockCost;
         if (p.sta >= cost) {
           p.sta -= cost; P.addXP('block', amount * 0.7);
           if (P.has('venomBulwark') && o.source && type !== 'proj') poisonEnemy(o.source);
@@ -590,9 +601,9 @@
     amount *= 1 - S.dr;
     if (amount <= 0) { floatText(p.x, p.y - 28, 'No damage', 'info'); return 'blocked'; }
     p.hp -= amount; p.sinceHit = 0;
-    P.bump('damageTaken', amount); P.addXP('endurance', amount * 0.45);
+    P.bump('damageTaken', amount); P.addXP('toughness', amount * 0.45);
     if (!o.dot) { p.hitFlash = 0.15; floatText(p.x, p.y - 26, Math.round(amount), 'hurt'); G.shake = Math.max(G.shake, 3); }
-    if (o.poison && !P.has('toxicBlood')) p.poisonT = Math.max(p.poisonT, o.poison);
+    if (o.poison && !P.has('toxicBlood')) p.poisonT = Math.max(p.poisonT, o.poison * S.statusResist);
     if ((type === 'contact' || type === 'melee') && o.source && P.has('toxicBlood')) poisonEnemy(o.source);
     if (p.hp <= 0) die();
     return 'hit';
@@ -654,14 +665,14 @@
       if (p.specialKind === 'lunge') { vx = Math.cos(p.lungeDir) * 820; vy = Math.sin(p.lungeDir) * 820; }
       else { vx = mx * S.speed * 0.45; vy = my * S.speed * 0.45; }
     } else if (!busy) {
-      const sp = S.speed * (p.sprinting ? 1.55 : 1) * (p.blocking ? 0.5 : 1) * (p.atkT > 0 && p.atkWeapon === 'greatsword' ? 0.55 : 1);
+      const sp = S.speed * (p.sprinting ? S.sprintMul : 1) * (p.blocking ? 0.5 : 1) * (p.atkT > 0 && p.atkWeapon === 'greatsword' ? 0.55 : 1);
       vx = mx * sp; vy = my * sp;
     }
     p.x += vx * dt; p.y += vy * dt;
     collideObstacles(p);
 
     if (p.sprinting) {
-      p.sta -= 14 * (P.has('lightStep') ? 0.6 : 1) * dt;
+      p.sta -= S.sprintCost * dt;
       p.runAcc += Math.hypot(vx, vy) * dt;
       if (p.runAcc >= 30) { const n = Math.floor(p.runAcc / 30); p.runAcc -= n * 30; P.addXP('running', n); }
       if (P.has('juggernaut')) {
@@ -680,6 +691,16 @@
     p.mana = Math.min(S.maxMana, p.mana + S.manaRegen * dt);
     if (P.has('grit') && p.sinceHit > 4) p.hp = Math.min(S.maxHp, p.hp + 1.5 * dt);
     if (p.slimeRegen > 0) { p.slimeRegen -= dt; p.hp = Math.min(S.maxHp, p.hp + 6 * dt); }
+    // Meditation: stand still, out of danger, while something still needs recovering.
+    const calm = p.sinceHit > (P.has('innerCalm') ? 0.5 : 3) && p.poisonT <= 0 && !p.inFire;
+    const recovering = p.hp < S.maxHp || p.mana < S.maxMana || p.sta < S.maxSta;
+    p.meditating = !moving && calm && recovering && p.atkT <= 0 && !p.blocking && p.dodgeT <= 0 && p.specialT <= 0 && !G.enemies.some(e => e.aggro && !e.dead);
+    if (p.meditating) {
+      p.hp = Math.min(S.maxHp, p.hp + 2 * S.meditateRate * dt);
+      p.mana = Math.min(S.maxMana, p.mana + 2 * S.meditateRate * dt);
+      p.medAcc = (p.medAcc || 0) + dt;
+      if (p.medAcc >= 1.5) { p.medAcc -= 1.5; P.addXP('meditation', 1); }
+    }
 
     if (p.poisonT > 0) {
       if (P.has('toxicBlood')) p.poisonT = 0;
